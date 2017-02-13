@@ -5,3 +5,13 @@ p = cellfun(@(x) x.close,prices_struct.series);
 t = cellfun(@(x) x.Timestamp,prices_struct.series)';
 tt = datetime(t,'ConvertFrom','posixtime','Format','yyyyMMddHHmm');
 
+tweets_merck = MyTwitterAPI(TwitterAppCredentials);
+tweets_merck.downloadAllTweets('Merck','since','2010-01-01');
+tw = tweets_merck;
+
+vecTweets = tw.vecTweets;
+vecTweets_Timestamp = tw.vecTweets_Timestamp;
+
+pr = MyYahooIntradayAPI('Merck');
+vecPrices = pr.vecPrices;
+vecPrices_Timestamp = pr.vecPrices_Timestamp;
