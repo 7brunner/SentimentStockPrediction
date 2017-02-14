@@ -18,6 +18,9 @@ classdef MyTwitterAPI < twitty
         numAPICalls
         vecTweets
         vecTweets_Timestamp
+        vecTweets_Sentiment
+        arrTweets_Tokenized
+        Vocabulary
     end
     
     methods
@@ -123,6 +126,63 @@ classdef MyTwitterAPI < twitty
             intMonth = str2double(strMonth);
         end
         
+        %% Tokenize tweets
+        function obj = tokenizeTweets(obj)
+            if isempty(obj.arrTweets_Tokenized)
+                characters = 'abcdefghijklmnopqrstuvwxyz ';
+                stopwords = urlread('http://www.textfixer.com/tutorials/common-english-words.txt');
+                stopwords = strsplit(stopwords,',');
+
+                arrTweets = cell(obj.TweetArray_Last,1);
+
+                for iTweet = 1:obj.TweetArray_Last
+                    strTweet = lower(obj.vecTweets{iTweet});
+
+                    % Remove URLs, user names, Hash Tags and line breaks
+                    strTweet = regexprep(strTweet,'(http|https)://[^\s]*','');
+                    strTweet = regexprep(strTweet,'(@|#|\$|&)[^\s]*','');
+                    strTweet = regexprep(strTweet,'[^\s]*\\u[^\s]*','');
+                    strTweet = regexprep(strTweet,char(13),' ');
+                    strTweet = regexprep(strTweet,char(10),' ');
+
+                    % Only keep lexical content
+                    strTweet = strTweet(ismember(strTweet,characters));
+
+                    % split into array
+                    arrTweet = strsplit(strTweet,' ');
+                    
+                    % Exclude stopwords and one-letter words
+                    arrTweet = arrTweet(~ismember(arrTweet,stopwords));
+                    arrTweet = arrTweet(cellfun(@length,arrTweet) > 1);
+                    
+                    % Store result
+                    arrTweets{iTweet} = arrTweet;
+                    if iTweet == 1
+                        vocabs = unique(arrTweet);
+                    else
+                        vocabs = unique([vocabs arrTweet]);
+                    end
+                end
+                obj.arrTweets_Tokenized = arrTweets;
+                obj.Vocabulary = vocabs';
+            end
+        end
+        
+        %% Assign sentiment scores based on input score table
+        function obj = assignBagOfWordScores(obj,ScoreTable)
+            obj.tokenizeTweets;
+            obj.vecTweets_Sentiment = zeros(obj.TweetArray_Last,1);
+            
+            for iTweet = 1:obj.TweetArray_Last                
+                % Assign scores from passed table
+                arrTweet = obj.arrTweets_Tokenized{iTweet};
+                pos = ismember(ScoreTable.Term,arrTweet);
+                dblScore = sum(ScoreTable.Score(pos));
+                if ~isnan(dblScore)
+                    obj.vecTweets_Sentiment(iTweet) = dblScore / sum(pos);
+                end
+            end
+        end
     end
     
     methods (Access = private)
@@ -153,10 +213,11 @@ classdef MyTwitterAPI < twitty
                     blnLoop = false;
                     last_id = '';
                 else
+                    blnLoop = false;
+                    LastTweet = NewTweets{end};
+                    last_id = num2str(LastTweet.id,'%u');
 %                     %%%
 %                     % Check if last tweet is younger than since date
-%                     LastTweet = NewTweets{end};
-%                     last_id = num2str(LastTweet.id,'%u');
 %                     last_date = obj.parseTwitterDateShort(LastTweet.created_at);
 %                     
 %                     if last_date <= intSince
