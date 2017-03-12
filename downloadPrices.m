@@ -15,3 +15,7 @@ vecTweets_Timestamp = tw.vecTweets_Timestamp;
 pr = MyYahooIntradayAPI('Merck');
 vecPrices = pr.vecPrices;
 vecPrices_Timestamp = pr.vecPrices_Timestamp;
+
+scoreFile = 'C:\Users\Administrator\Desktop\SentimentStockPrediction\AFINN\AFINN-111.txt';
+AFINN = readtable(scoreFile,'Delimiter','\t','ReadVariableNames',0);
+AFINN.Properties.VariableNames = {'Term','Score'};

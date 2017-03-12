@@ -213,7 +213,7 @@ classdef MyTwitterAPI < twitty
                     blnLoop = false;
                     last_id = '';
                 else
-                    blnLoop = false;
+                    blnLoop = true;
                     LastTweet = NewTweets{end};
                     last_id = num2str(LastTweet.id,'%u');
 %                     %%%
